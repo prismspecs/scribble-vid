@@ -2,6 +2,8 @@
 
 A browser-based drawing and video recording tool that captures your drawings with transparent backgrounds, perfect for creating animated overlays and video effects.
 
+**[Try it live here](https://prismspecs.github.io/scribble-vid/)**
+
 ## Features
 
 - **Full-Featured Drawing Tools**
