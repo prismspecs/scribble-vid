@@ -19,6 +19,11 @@ class ScribbleApp {
         this.mode = 'draw';
         this.bgImage = null;
         
+        // Smooth drawing
+        this.lastX = 0;
+        this.lastY = 0;
+        this.points = [];
+        
         // Canvas scaling
         this.scale = 1;
         this.maxDisplayWidth = null;
@@ -215,11 +220,24 @@ class ScribbleApp {
 
     startDrawing(e) {
         this.drawing = true;
-        this.draw(e);
+        this.points = [];
+        
+        const rect = this.drawCanvas.getBoundingClientRect();
+        const displayX = e.clientX - rect.left;
+        const displayY = e.clientY - rect.top;
+        
+        // Scale coordinates to actual canvas resolution
+        const x = displayX / this.scale;
+        const y = displayY / this.scale;
+        
+        this.lastX = x;
+        this.lastY = y;
+        this.points.push({ x, y });
     }
 
     stopDrawing() {
         this.drawing = false;
+        this.points = [];
         this.drawCtx.beginPath();
     }
 
@@ -235,6 +253,9 @@ class ScribbleApp {
         const x = displayX / this.scale;
         const y = displayY / this.scale;
 
+        // Add point to array
+        this.points.push({ x, y });
+
         // Scale brush size to actual resolution
         this.drawCtx.lineWidth = this.brushSize / this.scale;
         this.drawCtx.lineCap = 'round';
@@ -248,10 +269,30 @@ class ScribbleApp {
             this.drawCtx.strokeStyle = this.brushColor;
         }
 
-        this.drawCtx.lineTo(x, y);
-        this.drawCtx.stroke();
+        // Use quadratic curves for smooth drawing
         this.drawCtx.beginPath();
-        this.drawCtx.moveTo(x, y);
+        
+        if (this.points.length < 3) {
+            // Not enough points for curve, draw line
+            this.drawCtx.moveTo(this.lastX, this.lastY);
+            this.drawCtx.lineTo(x, y);
+        } else {
+            // Draw smooth curve through points
+            const lastPoint = this.points[this.points.length - 2];
+            const currentPoint = this.points[this.points.length - 1];
+            
+            // Calculate midpoint for smoother curves
+            const midX = (lastPoint.x + currentPoint.x) / 2;
+            const midY = (lastPoint.y + currentPoint.y) / 2;
+            
+            this.drawCtx.moveTo(this.lastX, this.lastY);
+            this.drawCtx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
+            
+            this.lastX = midX;
+            this.lastY = midY;
+        }
+        
+        this.drawCtx.stroke();
     }
 
     handleTouchStart(e) {
